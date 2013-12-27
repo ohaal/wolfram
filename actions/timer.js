@@ -21,7 +21,7 @@ function start(name, duration, ctx) {
         type: "timer",
         name: name,
         start: Date.now(),
-        duration: _parseDuration(duration),
+        duration: _getDuration(duration),
         owner: ctx.req.source.nick,
         replyTo: ctx.req.replyTo,
         req: ctx.req._id,
@@ -39,7 +39,15 @@ function start(name, duration, ctx) {
     });
 }
 
-function _parseDuration(duration) {
+function _getDuration(input) {
+    var duration = _parseDuration(input);
+    if (duration === 0) {
+        duration = _parseDate(input);
+    }
+    return duration;
+}
+
+function _parseDuration(input) {
     var t = {
         s: 1000,
         m: 1000 * 60,
@@ -48,14 +56,9 @@ function _parseDuration(duration) {
         w: 1000 * 60 * 60 * 24 * 7,
         y: 1000 * 60 * 60 * 24 * 365
     }
-    
-    // Backwards compatibility
-    if (!isNaN(duration)) {
-        return parseInt(duration, 10) * t.m;
-    }
-    
+
     var re = /^(?:(\d+)y)?(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i;
-    var time = re.exec(duration);
+    var time = re.exec(input);
     
     var sum = 0;
     sum += t.y * (time[1] || 0);
@@ -66,6 +69,59 @@ function _parseDuration(duration) {
     sum += t.s * (time[6] || 0);
     
     return sum;
+}
+
+function _parseDate(input) {
+    var re = /^(?:(?:(\d{1,2})[\/.\\-](\d{1,2})(?:[\/.\\-]((?:\d{2}|\d{4})))?(?:\D(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?)|(?:(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?))$/;
+    var time = re.exec(input);
+    
+    var year, month, day, hour, minute, second;
+    var future, now;
+  
+    var curDate = new Date();
+    var unixCurDayOfMonth = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate()).getTime();
+    var unixCurTime = curDate.getTime();
+    
+    if (time) {
+        var yearIsNotDefined = (typeof time[3] === 'undefined');
+        var dateIsNotDefined = (typeof time[1] === 'undefined');
+       
+        year = parseInt(time[3] || curDate.getFullYear(), 10);
+        if (year < 100) {
+            year += 2000;
+        }
+        
+        month = parseInt(time[2] || curDate.getMonth()+1, 10);
+        day = parseInt(time[1] || curDate.getDate(), 10);
+        
+        var unixReqDayOfMonth = new Date(year, month-1, day).getTime();
+        if ((unixCurDayOfMonth > unixReqDayOfMonth) && yearIsNotDefined) {
+            year += 1;
+        }
+ 
+        hour = parseInt(time[4] || time[7] || 0, 10);
+        minute = parseInt(time[5] || time[8] || 0, 10);
+        second = parseInt(time[6] || time[9] || 0, 10);
+        
+        var unixReqTime = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(), hour-1, minute, second).getTime();
+        if ((unixCurTime > unixReqTime) && dateIsNotDefined) {
+            day += 1;
+        }
+        
+        future = new Date(year, month-1, day, hour-1, minute, second).getTime();
+    }
+    else {
+        future = 0;
+    }
+    
+    now = Date.now();
+    
+    if (future - now < 0) {
+        return 0;
+    }
+    else {
+        return future - now; // milli
+    }
 }
 
 function _start(timer, ctx) {
