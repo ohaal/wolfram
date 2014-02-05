@@ -103,12 +103,12 @@ function _parseDate(input) {
         minute = parseInt(time[5] || time[8] || 0, 10);
         second = parseInt(time[6] || time[9] || 0, 10);
         
-        var unixReqTime = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(), hour-1, minute, second).getTime();
+        var unixReqTime = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(), hour, minute, second).getTime();
         if ((unixCurTime > unixReqTime) && dateIsNotDefined) {
             day += 1;
         }
         
-        future = new Date(year, month-1, day, hour-1, minute, second).getTime();
+        future = new Date(year, month-1, day, hour, minute, second).getTime();
     }
     else {
         future = 0;
