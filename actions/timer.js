@@ -88,17 +88,11 @@ function _parseDate(input) {
        
         year = parseInt(time[3] || curDate.getFullYear(), 10);
         if (year < 100) {
-            year += 2000;
+        	year += 2000;
         }
         
         month = parseInt(time[2] || curDate.getMonth()+1, 10);
         day = parseInt(time[1] || curDate.getDate(), 10);
-        
-        var unixReqDayOfMonth = new Date(year, month-1, day).getTime();
-        if ((unixCurDayOfMonth > unixReqDayOfMonth) && yearIsNotDefined) {
-            year += 1;
-        }
- 
         hour = parseInt(time[4] || time[7] || 0, 10);
         minute = parseInt(time[5] || time[8] || 0, 10);
         second = parseInt(time[6] || time[9] || 0, 10);
@@ -106,6 +100,13 @@ function _parseDate(input) {
         var unixReqTime = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(), hour, minute, second).getTime();
         if ((unixCurTime > unixReqTime) && dateIsNotDefined) {
             day += 1;
+        }
+        
+        var unixReqDayOfMonth = new Date(year, month-1, day).getTime();
+        var todayIsAfterRequestedDay = (unixCurDayOfMonth > unixReqDayOfMonth);
+        var todayIsSameAsRequestedDayButEarlierInTheDay = (unixReqDayOfMonth == unixCurDayOfMonth && unixReqTime < unixCurTime);
+        if ((todayIsAfterRequestedDay || todayIsSameAsRequestedDayButEarlierInTheDay) && yearIsNotDefined) {
+            year += 1;
         }
         
         future = new Date(year, month-1, day, hour, minute, second).getTime();
